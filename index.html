@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поздравление со шмелем</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(to bottom, #e6e6fa, #fff5e1);
+            overflow: hidden;
+        }
+        canvas {
+            border: 4px solid #b5ead7;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-left: 350px;
+        }
+        #greeting {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            font-family: 'Amatic SC', cursive;
+            font-size: 2em;
+            color: #333;
+            background: linear-gradient(135deg, #b5ead7, #ffdab9);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 300px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        @media (max-width: 800px) {
+            canvas { margin-left: 200px; }
+            #greeting { font-size: 1.5em; padding: 15px; max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="greeting"></div>
+    <script>
+        let bee, obstacles, flowers, greetingLines, collectedFlowers;
+        let beeImg, flowerImg, cloudImg;
+        const canvasWidth = 600;
+        const canvasHeight = 500;
+
+        function preload() {
+            console.log("Starting preload...");
+            try {
+                beeImg = loadImage('https://raw.githubusercontent.com/cc4arin/gift/main/bee.png', 
+                    () => console.log("Bee image loaded"), 
+                    () => console.error("Failed to load bee.png")
+                );
+                flowerImg = loadImage('https://raw.githubusercontent.com/cc4arin/gift/main/flower.png', 
+                    () => console.log("Flower image loaded"), 
+                    () => console.error("Failed to load flower.png")
+                );
+                cloudImg = loadImage('https://raw.githubusercontent.com/cc4arin/gift/main/clouds.png', 
+                    () => console.log("Cloud image loaded"), 
+                    () => console.error("Failed to load clouds.png")
+                );
+            } catch (e) {
+                console.error("Preload error:", e);
+            }
+        }
+
+        function setup() {
+            console.log("Setup started");
+            createCanvas(canvasWidth, canvasHeight);
+            bee = new Bee();
+            obstacles = [];
+            flowers = [];
+            greetingLines = [
+                "С днём рождения! 🎉",
+                "Пусть твой день будет нежным,",
+                "как мятное облачко, и тёплым,",
+                "как персиковое солнышко! 🌸"
+            ];
+            collectedFlowers = 0;
+            for (let i = 0; i < 5; i++) {
+                obstacles.push(new Obstacle());
+            }
+            for (let i = 0; i < 3; i++) {
+                flowers.push(new Flower());
+            }
+            updateGreeting();
+            console.log("Setup completed");
+        }
+
+        function draw() {
+            background('#e6e6fa');
+            bee.update();
+            bee.show();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].update();
+                obstacles[i].show();
+                if (obstacles[i].hits(bee)) {
+                    obstacles = [];
+                    flowers = [];
+                    for (let j = 0; j < 5; j++) {
+                        obstacles.push(new Obstacle());
+                    }
+                    for (let j = 0; j < 3; j++) {
+                        flowers.push(new Flower());
+                    }
+                }
+                if (obstacles[i].offscreen()) {
+                    obstacles.splice(i, 1);
+                    obstacles.push(new Obstacle());
+                }
+            }
+            for (let i = flowers.length - 1; i >= 0; i--) {
+                flowers[i].update();
+                flowers[i].show();
+                if (flowers[i].hits(bee)) {
+                    collectedFlowers++;
+                    updateGreeting();
+                    flowers.splice(i, 1);
+                    if (collectedFlowers < greetingLines.length) {
+                        flowers.push(new Flower());
+                    }
+                }
+                if (flowers[i].offscreen()) {
+                    flowers.splice(i, 1);
+                    if (collectedFlowers < greetingLines.length) {
+                        flowers.push(new Flower());
+                    }
+                }
+            }
+        }
+
+        function updateGreeting() {
+            let greetingText = '';
+            for (let i = 0; i < Math.min(collectedFlowers, greetingLines.length); i++) {
+                greetingText += greetingLines[i] + '<br>';
+            }
+            document.getElementById('greeting').innerHTML = greetingText;
+        }
+
+        function keyPressed() {
+            if (key === ' ') {
+                bee.flap();
+            }
+        }
+
+        class Bee {
+            constructor() {
+                this.x = 100;
+                this.y = height / 2;
+                this.velocity = 0;
+                this.gravity = 0.4;
+                this.lift = -10;
+                this.size = 60;
+                this.damping = 0.95;
+            }
+            update() {
+                this.velocity += this.gravity;
+                this.velocity *= this.damping;
+                this.y += this.velocity;
+                this.y = constrain(this.y, 0, height - this.size);
+            }
+            show() {
+                push();
+                translate(this.x, this.y);
+                let angle = sin(frameCount * 0.1) * 5;
+                rotate(radians(angle));
+                if (beeImg && beeImg.width > 0) {
+                    image(beeImg, -this.size/2, -this.size/2, this.size, this.size);
+                } else {
+                    console.warn("Bee image not loaded, using fallback");
+                    fill('#FFC107');
+                    stroke('#000');
+                    strokeWeight(2);
+                    ellipse(0, 0, this.size, this.size * 0.7);
+                    fill('#000');
+                    noStroke();
+                    rect(-10, -this.size*0.35, 5, this.size*0.7);
+                    rect(0, -this.size*0.35, 5, this.size*0.7);
+                    rect(10, -this.size*0.35, 5, this.size*0.7);
+                    fill(255, 255, 255, 200);
+                    stroke(200);
+                    strokeWeight(1);
+                    let wingAngle = sin(frameCount * 0.2) * 15;
+                    push();
+                    rotate(radians(wingAngle));
+                    ellipse(-15, -10, 20, 10);
+                    pop();
+                    push();
+                    rotate(radians(-wingAngle));
+                    ellipse(15, -10, 20, 10);
+                    pop();
+                }
+                pop();
+            }
+            flap() {
+                this.velocity = this.lift;
+            }
+        }
+
+        class Obstacle {
+            constructor() {
+                this.x = width;
+                this.gap = 250;
+                this.top = random(height / 4, 3 * height / 4 - this.gap);
+                this.w = 100;
+                this.speed = 4;
+            }
+            update() {
+                this.x -= this.speed;
+            }
+            show() {
+                if (cloudImg && cloudImg.width > 0) {
+                    image(cloudImg, this.x, 0, this.w, this.top);
+                    image(cloudImg, this.x, this.top + this.gap, this.w, height - this.top - this.gap);
+                } else {
+                    console.warn("Cloud image not loaded, using fallback");
+                    noStroke();
+                    fill('#b5ead7');
+                    rect(this.x, 0, this.w, this.top, 20);
+                    rect(this.x, this.top + this.gap, this.w, height - this.top - this.gap, 20);
+                    fill(255, 255, 255, 100);
+                    ellipse(this.x + this.w/2, this.top, 60, 30);
+                    ellipse(this.x + this.w/2, this.top + this.gap, 60, 30);
+                }
+            }
+            hits(bee) {
+                if (bee.x + bee.size/2 > this.x && bee.x - bee.size/2 < this.x + this.w) {
+                    if (bee.y - bee.size/2 < this.top || bee.y + bee.size/2 > this.top + this.gap) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            offscreen() {
+                return this.x < -this.w;
+            }
+        }
+
+        class Flower {
+            constructor() {
+                this.x = width;
+                this.y = random(height / 4, 3 * height / 4);
+                this.size = 50;
+                this.speed = 4;
+            }
+            update() {
+                this.x -= this.speed;
+            }
+            show() {
+                push();
+                translate(this.x, this.y);
+                if (flowerImg && flowerImg.width > 0) {
+                    image(flowerImg, -this.size/2, -this.size/2, this.size, this.size);
+                } else {
+                    console.warn("Flower image not loaded, using fallback");
+                    fill('#FFB6C1');
+                    noStroke();
+                    for (let i = 0; i < 8; i++) {
+                        push();
+                        rotate(TWO_PI * i / 8);
+                        ellipse(15, 0, 15, 10);
+                        pop();
+                    }
+                    fill('#FFFF99');
+                    ellipse(0, 0, this.size * 0.5);
+                    stroke('#228B22');
+                    strokeWeight(3);
+                    line(0, this.size/2, 0, this.size);
+                }
+                pop();
+            }
+            hits(bee) {
+                let d = dist(bee.x, bee.y, this.x, this.y);
+                return d < (bee.size + this.size) / 2;
+            }
+            offscreen() {
+                return this.x < -this.size;
+            }
+        }
+    </script>
+</body>
+</html>
