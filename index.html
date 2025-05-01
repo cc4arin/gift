@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Поздравление со шмелем</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -26,8 +26,9 @@
             top: 50%;
             left: 20px;
             transform: translateY(-50%);
-            font-family: 'Amatic SC', cursive;
-            font-size: 2em;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px; /* Компактный размер для пиксельного стиля */
+            line-height: 1.5;
             color: #333;
             background: linear-gradient(135deg, #b5ead7, #ffdab9);
             padding: 20px;
@@ -35,17 +36,37 @@
             max-width: 300px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px;
+            padding: 15px 30px;
+            background: #ffdab9;
+            border: 3px solid #b5ead7;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        #startButton:hover {
+            background: #b5ead7;
+        }
         @media (max-width: 800px) {
             canvas { margin-left: 200px; }
-            #greeting { font-size: 1.5em; padding: 15px; max-width: 200px; }
+            #greeting { font-size: 12px; padding: 15px; max-width: 200px; }
+            #startButton { font-size: 16px; padding: 10px 20px; }
         }
     </style>
 </head>
 <body>
     <div id="greeting"></div>
+    <button id="startButton" style="display: none;">Начать игру</button>
     <script>
         let bee, obstacles, flowers, greetingLines, collectedFlowers;
         let beeImg, flowerImg, cloudImg;
+        let gameState = 'paused'; // Состояния: 'paused', 'playing'
         const canvasWidth = 600;
         const canvasHeight = 500;
 
@@ -76,36 +97,83 @@
             obstacles = [];
             flowers = [];
             greetingLines = [
-                "С днём рождения! 🎉",
-                "Пусть твой день будет нежным,",
-                "как мятное облачко, и тёплым,",
-                "как персиковое солнышко! 🌸"
+                "✨С Днём рождения! ✨",
+                "Хотела поздравить Вас по-особенному",
+                "и вот что получилось!",
+                "",
+                "Желаю Вам крепкого здоровья",
+                "счастья и радости",
+                "каждый день!",
+                "",
+                "Вы зажигаете искры интереса",
+                "глядя на Вас хочется",
+                "творить и заражаться",
+                "Вашим энтузиазмом.",
+                "",
+                "Я искренне рада, что могу учиться у Вас",
+                "и знакома с таким замечательным человеком!",
+                "",
+                "Пусть жизнь дарит идеи,",
+                "уютные вечера и",
+                "исполнение всех мечт!",
+                "",
+                "Кстати, раз я председатель",
+                "Вашего фан-клуба,",
+                "подскажите, как его назвать?)"
             ];
             collectedFlowers = 0;
-            for (let i = 0; i < 5; i++) {
+            // Инициализация препятствий и цветков
+            for (let i = 0; i < 8; i++) { // Больше облаков
                 obstacles.push(new Obstacle());
             }
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 5; i++) { // Больше цветков
                 flowers.push(new Flower());
             }
             updateGreeting();
+            // Настройка кнопки "Начать игру"
+            let startButton = document.getElementById('startButton');
+            startButton.style.display = 'block';
+            startButton.onclick = () => {
+                gameState = 'playing';
+                startButton.style.display = 'none';
+                bee = new Bee(); // Сброс позиции шмеля
+            };
             console.log("Setup completed");
         }
 
         function draw() {
             background('#e6e6fa');
+            if (gameState === 'paused') {
+                // Показать инструкцию
+                textAlign(CENTER, CENTER);
+                textFont('Press Start 2P');
+                textSize(20);
+                fill(51);
+                text("Нажми ПРОБЕЛ", width / 2, height / 2);
+                return;
+            }
+            // Обновление и отображение шмеля
             bee.update();
             bee.show();
+            // Отображение счётчика цветков
+            textAlign(LEFT, TOP);
+            textFont('Press Start 2P');
+            textSize(16);
+            fill(51);
+            text(`Цветки: ${collectedFlowers}`, 10, 10);
+            // Обновление и отображение препятствий
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update();
                 obstacles[i].show();
                 if (obstacles[i].hits(bee)) {
+                    gameState = 'paused';
+                    document.getElementById('startButton').style.display = 'block';
                     obstacles = [];
                     flowers = [];
-                    for (let j = 0; j < 5; j++) {
+                    for (let j = 0; j < 8; j++) {
                         obstacles.push(new Obstacle());
                     }
-                    for (let j = 0; j < 3; j++) {
+                    for (let j = 0; j < 5; j++) {
                         flowers.push(new Flower());
                     }
                 }
@@ -114,6 +182,7 @@
                     obstacles.push(new Obstacle());
                 }
             }
+            // Обновление и отображение цветков
             for (let i = flowers.length - 1; i >= 0; i--) {
                 flowers[i].update();
                 flowers[i].show();
@@ -121,29 +190,30 @@
                     collectedFlowers++;
                     updateGreeting();
                     flowers.splice(i, 1);
-                    if (collectedFlowers < greetingLines.length) {
-                        flowers.push(new Flower());
-                    }
+                    flowers.push(new Flower()); // Всегда добавлять новый цветок
                 }
                 if (flowers[i].offscreen()) {
                     flowers.splice(i, 1);
-                    if (collectedFlowers < greetingLines.length) {
-                        flowers.push(new Flower());
-                    }
+                    flowers.push(new Flower());
                 }
             }
         }
 
         function updateGreeting() {
             let greetingText = '';
-            for (let i = 0; i < Math.min(collectedFlowers, greetingLines.length); i++) {
+            let linesToShow = Math.min(collectedFlowers, greetingLines.length);
+            for (let i = 0; i < linesToShow; i++) {
                 greetingText += greetingLines[i] + '<br>';
             }
             document.getElementById('greeting').innerHTML = greetingText;
         }
 
         function keyPressed() {
-            if (key === ' ') {
+            if (key === ' ' && gameState === 'paused') {
+                gameState = 'playing';
+                document.getElementById('startButton').style.display = 'none';
+                bee = new Bee();
+            } else if (key === ' ' && gameState === 'playing') {
                 bee.flap();
             }
         }
@@ -159,6 +229,7 @@
                 this.damping = 0.95;
             }
             update() {
+                if (gameState === 'paused') return;
                 this.velocity += this.gravity;
                 this.velocity *= this.damping;
                 this.y += this.velocity;
@@ -204,13 +275,14 @@
 
         class Obstacle {
             constructor() {
-                this.x = width;
-                this.gap = 250;
-                this.top = random(height / 4, 3 * height / 4 - this.gap);
-                this.w = 100;
-                this.speed = 4;
+                this.x = width + random(100, 300); // Разброс по расстоянию
+                this.gap = random(200, 300); // Разный зазор
+                this.top = random(height / 6, height - this.gap - height / 6);
+                this.w = random(80, 120); // Разная ширина
+                this.speed = random(3, 5); // Разная скорость
             }
             update() {
+                if (gameState === 'paused') return;
                 this.x -= this.speed;
             }
             show() {
@@ -243,17 +315,21 @@
 
         class Flower {
             constructor() {
-                this.x = width;
-                this.y = random(height / 4, 3 * height / 4);
+                this.x = width + random(100, 300);
+                // Равномерное распределение по высоте
+                this.y = random([height / 6, height / 3, height / 2, 2 * height / 3, 5 * height / 6]);
                 this.size = 50;
-                this.speed = 4;
+                this.speed = random(3, 5);
             }
             update() {
+                if (gameState === 'paused') return;
                 this.x -= this.speed;
             }
             show() {
                 push();
                 translate(this.x, this.y);
+                let angle = sin(frameCount * 0.1) * 5;
+                rotate(radians(angle));
                 if (flowerImg && flowerImg.width > 0) {
                     image(flowerImg, -this.size/2, -this.size/2, this.size, this.size);
                 } else {
