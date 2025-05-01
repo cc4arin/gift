@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Поздравление со шмелем</title>
+    <title>С Днём Рождения!</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -12,64 +12,166 @@
             height: 100vh;
             display: flex;
             align-items: center;
-            background: linear-gradient(to bottom, #e6e6fa, #fff5e1);
+            justify-content: center;
+            background: linear-gradient(to bottom, #fdf0ec, #aee1f9);
             overflow: hidden;
+            font-family: 'Press Start 2P', cursive;
         }
+        
+        .container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            position: relative;
+        }
+        
+        .left-panel {
+            flex: 0.7;
+            padding-right: 20px;
+        }
+        
+        .right-panel {
+            flex: 1.3;
+            position: relative;
+        }
+        
         canvas {
-            border: 4px solid #b5ead7;
+            border: 4px solid #aee1f9;
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-left: 350px;
         }
+        
         #greeting {
-            position: absolute;
-            top: 50%;
-            left: 20px;
-            transform: translateY(-50%);
-            font-family: 'Press Start 2P', cursive;
-            font-size: 16px; /* Компактный размер для пиксельного стиля */
-            line-height: 1.5;
-            color: #333;
-            background: linear-gradient(135deg, #b5ead7, #ffdab9);
+            height: 400px;
+            overflow: hidden;
             padding: 20px;
+            background: linear-gradient(135deg, #f0faff, #e8f7fe);
             border-radius: 10px;
-            max-width: 300px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease;
         }
+        
+        .greeting-content {
+            position: relative;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .greeting-line {
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 10px;
+            opacity: 1;
+            transition: opacity 0.8s ease;
+            text-align: center;
+            width: 100%;
+        }
+        
         #startButton {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-family: 'Press Start 2P', cursive;
-            font-size: 20px;
+            font-size: 18px;
             padding: 15px 30px;
-            background: #ffdab9;
-            border: 3px solid #b5ead7;
+            background: #fdf0ec;
+            border: 3px solid #aee1f9;
             border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            animation: pulse 1.5s infinite;
         }
+        
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            }
+        }
+        
         #startButton:hover {
-            background: #b5ead7;
+            background: #aee1f9;
         }
-        @media (max-width: 800px) {
-            canvas { margin-left: 200px; }
-            #greeting { font-size: 12px; padding: 15px; max-width: 200px; }
-            #startButton { font-size: 16px; padding: 10px 20px; }
+        
+        .fade-mask {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(240,250,255,0.8) 70%, rgba(232,247,254,0.9));
+            pointer-events: none;
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .left-panel {
+                width: 100%;
+                padding-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            canvas {
+                width: 100%;
+                max-width: 700px;
+                height: auto;
+            }
+            
+            #greeting {
+                height: 300px;
+                width: 100%;
+            }
+            
+            #startButton {
+                font-size: 16px;
+                padding: 10px 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="greeting"></div>
-    <button id="startButton" style="display: none;">Начать игру</button>
+    <div class="container">
+        <div class="left-panel">
+            <div id="greeting">
+                <div class="greeting-content"></div>
+                <div class="fade-mask"></div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div id="game-canvas"></div>
+            <button id="startButton" style="display: none;">Начать игру</button>
+        </div>
+    </div>
+    
     <script>
         let bee, obstacles, flowers, greetingLines, collectedFlowers;
         let beeImg, flowerImg, cloudImg;
         let gameState = 'paused'; // Состояния: 'paused', 'playing'
-        const canvasWidth = 600;
+        const canvasWidth = 700; // Увеличенная ширина для прямоугольного поля
         const canvasHeight = 500;
-
+        let visibleLines = 7; // Увеличенное количество видимых строк в поздравлении
+        let maxDisplayedLines = 0; // Максимальное количество отображаемых строк
+        let greetingCompleted = false; // Флаг для отслеживания завершения поздравления
+        
         function preload() {
             console.log("Starting preload...");
             try {
@@ -92,7 +194,9 @@
 
         function setup() {
             console.log("Setup started");
-            createCanvas(canvasWidth, canvasHeight);
+            let canvas = createCanvas(canvasWidth, canvasHeight);
+            canvas.parent('game-canvas');
+            
             bee = new Bee();
             obstacles = [];
             flowers = [];
@@ -102,34 +206,34 @@
                 "и вот что получилось!",
                 "",
                 "Желаю Вам крепкого здоровья",
-                "счастья и радости",
-                "каждый день!",
+                "счастья и чтобы каждый день",
+                "приносил радость!",
                 "",
-                "Вы зажигаете искры интереса",
-                "глядя на Вас хочется",
+                "Глядя на Вас хочется",
                 "творить и заражаться",
                 "Вашим энтузиазмом.",
                 "",
-                "Я искренне рада, что могу учиться у Вас",
+                "Я рада, что могу учиться у Вас",
                 "и знакома с таким замечательным человеком!",
                 "",
-                "Пусть жизнь дарит идеи,",
-                "уютные вечера и",
-                "исполнение всех мечт!",
-                "",
-                "Кстати, раз я председатель",
-                "Вашего фан-клуба,",
-                "подскажите, как его назвать?)"
+                "Пусть жизнь приносит Вам море идей,",
+                "уютных вечеров и",
+                "всего о чём мечтаете!"
             ];
             collectedFlowers = 0;
+            maxDisplayedLines = 0;
+            
             // Инициализация препятствий и цветков
-            for (let i = 0; i < 8; i++) { // Больше облаков
+            for (let i = 0; i < 8; i++) {
                 obstacles.push(new Obstacle());
             }
-            for (let i = 0; i < 5; i++) { // Больше цветков
+            for (let i = 0; i < 5; i++) {
                 flowers.push(new Flower());
             }
+            
+            // Создаем начальное поздравление
             updateGreeting();
+            
             // Настройка кнопки "Начать игру"
             let startButton = document.getElementById('startButton');
             startButton.style.display = 'block';
@@ -138,36 +242,41 @@
                 startButton.style.display = 'none';
                 bee = new Bee(); // Сброс позиции шмеля
             };
+            
             console.log("Setup completed");
         }
 
         function draw() {
-            background('#e6e6fa');
+            background('#ccfbff');
+            
             if (gameState === 'paused') {
-                // Показать инструкцию
-                textAlign(CENTER, CENTER);
-                textFont('Press Start 2P');
-                textSize(20);
-                fill(51);
-                text("Нажми ПРОБЕЛ", width / 2, height / 2);
+                // Убираем инструкцию о нажатии пробела
                 return;
             }
+            
             // Обновление и отображение шмеля
             bee.update();
             bee.show();
+            
             // Отображение счётчика цветков
             textAlign(LEFT, TOP);
             textFont('Press Start 2P');
             textSize(16);
             fill(51);
             text(`Цветки: ${collectedFlowers}`, 10, 10);
+            
             // Обновление и отображение препятствий
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update();
                 obstacles[i].show();
+                
                 if (obstacles[i].hits(bee)) {
                     gameState = 'paused';
                     document.getElementById('startButton').style.display = 'block';
+                    // Сбрасываем только счетчик цветов при столкновении, не трогаем поздравление
+                    collectedFlowers = 0;
+                    
+                    // Сбрасываем препятствия и цветы
                     obstacles = [];
                     flowers = [];
                     for (let j = 0; j < 8; j++) {
@@ -177,21 +286,43 @@
                         flowers.push(new Flower());
                     }
                 }
+                
                 if (obstacles[i].offscreen()) {
                     obstacles.splice(i, 1);
                     obstacles.push(new Obstacle());
                 }
             }
+            
             // Обновление и отображение цветков
             for (let i = flowers.length - 1; i >= 0; i--) {
                 flowers[i].update();
                 flowers[i].show();
+                
                 if (flowers[i].hits(bee)) {
                     collectedFlowers++;
-                    updateGreeting();
+                    if (collectedFlowers > maxDisplayedLines && collectedFlowers <= greetingLines.length) {
+                        maxDisplayedLines = collectedFlowers;
+                        updateGreeting();
+                        
+                        // Проверяем, закончилось ли поздравление
+                        if (maxDisplayedLines >= greetingLines.length && !greetingCompleted) {
+                            greetingCompleted = true;
+                            // Запускаем таймер на скрытие поздравления через 5 секунд
+                            setTimeout(() => {
+                                let greeting = document.getElementById('greeting');
+                                greeting.style.opacity = '0';
+                                // После завершения анимации скрытия, убираем блок с поздравлением совсем
+                                setTimeout(() => {
+                                    document.querySelector('.left-panel').style.display = 'none';
+                                    document.querySelector('.right-panel').style.flexBasis = '100%';
+                                }, 1500);
+                            }, 5000);
+                        }
+                    }
                     flowers.splice(i, 1);
-                    flowers.push(new Flower()); // Всегда добавлять новый цветок
+                    flowers.push(new Flower());
                 }
+                
                 if (flowers[i].offscreen()) {
                     flowers.splice(i, 1);
                     flowers.push(new Flower());
@@ -200,12 +331,50 @@
         }
 
         function updateGreeting() {
-            let greetingText = '';
-            let linesToShow = Math.min(collectedFlowers, greetingLines.length);
-            for (let i = 0; i < linesToShow; i++) {
-                greetingText += greetingLines[i] + '<br>';
+            let greetingContent = document.querySelector('.greeting-content');
+            greetingContent.innerHTML = '';
+            
+            // Отображаем строки поздравления
+            let linesToShow = Math.min(maxDisplayedLines, greetingLines.length);
+            
+            // Фиксируем центральную линию отображения
+            const fixedVisibleLines = visibleLines;
+            
+            // Создаем видимые строки для отображения
+            // Рассчитываем окно отображения так, чтобы новые строки добавлялись снизу, а самые старые исчезали сверху
+            let visibleStart = Math.max(0, linesToShow - fixedVisibleLines);
+            let visibleEnd = linesToShow;
+            
+            // Если у нас меньше строк, чем может поместиться в видимой области
+            if (linesToShow <= fixedVisibleLines) {
+                visibleStart = 0;
+                visibleEnd = linesToShow;
             }
-            document.getElementById('greeting').innerHTML = greetingText;
+            
+            // Создаем элементы для каждой видимой строки
+            for (let i = visibleStart; i < visibleEnd; i++) {
+                let lineElement = document.createElement('div');
+                lineElement.className = 'greeting-line';
+                lineElement.textContent = greetingLines[i];
+                
+                // Все строки полностью видимы
+                lineElement.style.opacity = '1';
+                
+                greetingContent.appendChild(lineElement);
+            }
+            
+            // Добавляем пустые строки сверху и снизу для центрирования,
+            // если у нас мало строк
+            if (linesToShow < fixedVisibleLines) {
+                const emptyLinesNeeded = Math.floor((fixedVisibleLines - linesToShow) / 2);
+                for (let i = 0; i < emptyLinesNeeded; i++) {
+                    let emptyLine = document.createElement('div');
+                    emptyLine.className = 'greeting-line';
+                    emptyLine.innerHTML = '&nbsp;';
+                    emptyLine.style.opacity = '0';
+                    greetingContent.insertBefore(emptyLine, greetingContent.firstChild);
+                }
+            }
         }
 
         function keyPressed() {
@@ -220,28 +389,37 @@
 
         class Bee {
             constructor() {
-                this.x = 100;
+                this.x = 150;
                 this.y = height / 2;
                 this.velocity = 0;
                 this.gravity = 0.4;
                 this.lift = -10;
-                this.size = 60;
+                this.size = 55;
                 this.damping = 0.95;
+                this.hitbox = this.size * 0.6; // Меньший хитбокс для более точных столкновений
             }
+            
             update() {
                 if (gameState === 'paused') return;
                 this.velocity += this.gravity;
                 this.velocity *= this.damping;
                 this.y += this.velocity;
-                this.y = constrain(this.y, 0, height - this.size);
+                this.y = constrain(this.y, 0, height - this.size/2);
             }
+            
             show() {
                 push();
                 translate(this.x, this.y);
                 let angle = sin(frameCount * 0.1) * 5;
                 rotate(radians(angle));
+                
                 if (beeImg && beeImg.width > 0) {
                     image(beeImg, -this.size/2, -this.size/2, this.size, this.size);
+                    
+                    // Визуализация хитбокса (раскомментировать для отладки)
+                    // noFill();
+                    // stroke(255, 0, 0);
+                    // ellipse(0, 0, this.hitbox, this.hitbox);
                 } else {
                     console.warn("Bee image not loaded, using fallback");
                     fill('#FFC107');
@@ -268,6 +446,7 @@
                 }
                 pop();
             }
+            
             flap() {
                 this.velocity = this.lift;
             }
@@ -275,24 +454,33 @@
 
         class Obstacle {
             constructor() {
-                this.x = width + random(100, 300); // Разброс по расстоянию
-                this.gap = random(200, 300); // Разный зазор
+                this.x = width + random(100, 300);
+                this.gap = random(220, 320); // Увеличенный зазор для более легкого прохождения
                 this.top = random(height / 6, height - this.gap - height / 6);
-                this.w = random(80, 120); // Разная ширина
-                this.speed = random(3, 5); // Разная скорость
+                this.w = random(80, 120);
+                this.speed = random(2, 4); // Немного снижена скорость
+                this.hitboxPadding = 10; // Меньший хитбокс для более точных столкновений
             }
+            
             update() {
                 if (gameState === 'paused') return;
                 this.x -= this.speed;
             }
+            
             show() {
                 if (cloudImg && cloudImg.width > 0) {
                     image(cloudImg, this.x, 0, this.w, this.top);
                     image(cloudImg, this.x, this.top + this.gap, this.w, height - this.top - this.gap);
+                    
+                    // Визуализация хитбокса (раскомментировать для отладки)
+                    // noFill();
+                    // stroke(255, 0, 0);
+                    // rect(this.x + this.hitboxPadding, 0, this.w - this.hitboxPadding*2, this.top);
+                    // rect(this.x + this.hitboxPadding, this.top + this.gap, this.w - this.hitboxPadding*2, height - this.top - this.gap);
                 } else {
                     console.warn("Cloud image not loaded, using fallback");
                     noStroke();
-                    fill('#b5ead7');
+                    fill('#aee1f9');
                     rect(this.x, 0, this.w, this.top, 20);
                     rect(this.x, this.top + this.gap, this.w, height - this.top - this.gap, 20);
                     fill(255, 255, 255, 100);
@@ -300,14 +488,19 @@
                     ellipse(this.x + this.w/2, this.top + this.gap, 60, 30);
                 }
             }
+            
             hits(bee) {
-                if (bee.x + bee.size/2 > this.x && bee.x - bee.size/2 < this.x + this.w) {
-                    if (bee.y - bee.size/2 < this.top || bee.y + bee.size/2 > this.top + this.gap) {
+                // Проверка столкновения с учетом уменьшенных хитбоксов
+                if (bee.x + bee.hitbox/2 > this.x + this.hitboxPadding && 
+                    bee.x - bee.hitbox/2 < this.x + this.w - this.hitboxPadding) {
+                    if (bee.y - bee.hitbox/2 < this.top - this.hitboxPadding || 
+                        bee.y + bee.hitbox/2 > this.top + this.gap + this.hitboxPadding) {
                         return true;
                     }
                 }
                 return false;
             }
+            
             offscreen() {
                 return this.x < -this.w;
             }
@@ -318,20 +511,29 @@
                 this.x = width + random(100, 300);
                 // Равномерное распределение по высоте
                 this.y = random([height / 6, height / 3, height / 2, 2 * height / 3, 5 * height / 6]);
-                this.size = 50;
-                this.speed = random(3, 5);
+                this.size = 45;
+                this.speed = random(2, 4);
+                this.hitbox = this.size * 0.8; // Меньший хитбокс для цветка
             }
+            
             update() {
                 if (gameState === 'paused') return;
                 this.x -= this.speed;
             }
+            
             show() {
                 push();
                 translate(this.x, this.y);
                 let angle = sin(frameCount * 0.1) * 5;
                 rotate(radians(angle));
+                
                 if (flowerImg && flowerImg.width > 0) {
                     image(flowerImg, -this.size/2, -this.size/2, this.size, this.size);
+                    
+                    // Визуализация хитбокса (раскомментировать для отладки)
+                    // noFill();
+                    // stroke(0, 255, 0);
+                    // ellipse(0, 0, this.hitbox, this.hitbox);
                 } else {
                     console.warn("Flower image not loaded, using fallback");
                     fill('#FFB6C1');
@@ -350,10 +552,12 @@
                 }
                 pop();
             }
+            
             hits(bee) {
                 let d = dist(bee.x, bee.y, this.x, this.y);
-                return d < (bee.size + this.size) / 2;
+                return d < (bee.hitbox + this.hitbox) / 2;
             }
+            
             offscreen() {
                 return this.x < -this.size;
             }
