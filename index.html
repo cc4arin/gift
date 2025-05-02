@@ -121,7 +121,6 @@
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 10;
-            display: block; /* Убедимся, что кнопка отображается */
         }
         
         #resetHighScoreButton:hover {
@@ -218,14 +217,13 @@
         </div>
         <div class="right-panel">
             <div id="game-canvas"></div>
-            <button id="startButton">Начать игру</button>
+            <button id="startButton" style="display: none;">Начать игру</button>
             <button id="resetHighScoreButton">Сбросить рекорд</button>
             <div id="easterEgg"></div>
         </div>
     </div>
     
     <script>
-        // Глобальные переменные
         let bee, obstacles, flowers, greetingLines, collectedFlowers, highScore;
         let beeImg, flowerImg, cloudImg;
         let gameState = 'paused';
@@ -237,9 +235,7 @@
         let easterEggTimeoutId = null;
         let currentLineIndex = 0;
         let isLineTransitioning = false;
-        let gameStarted = false;
         
-        // Пасхальные яйца
         const easterEggs = {
             25: "Ого, вы собираетесь продолжить?",
             30: "Да Вы уверенно идёте к цели!",
@@ -253,25 +249,13 @@
             100: "100?! Вы взяли и сделали это! Легендарный момент. Ну всё, я Вам буду должна ещё один сюрприз за поставленные рекорды!"
         };
         
-        // Загружаем рекорд из localStorage при загрузке страницы
-        function loadHighScore() {
-            try {
-                let savedScore = localStorage.getItem('flappyBeeHighScore');
-                if(savedScore !== null) {
-                    highScore = parseInt(savedScore);
-                } else {
-                    highScore = 0;
-                    localStorage.setItem('flappyBeeHighScore', '0');
-                }
-                console.log("High score loaded:", highScore);
-            } catch (e) {
-                console.error("Ошибка при загрузке рекорда:", e);
-                highScore = 0;
-            }
+        try {
+            highScore = parseInt(localStorage.getItem('flappyBeeHighScore')) || 0;
+            console.log("High score loaded:", highScore);
+        } catch (e) {
+            console.error("Ошибка при загрузке рекорда:", e);
+            highScore = 0;
         }
-        
-        // Инициализация при загрузке скрипта
-        loadHighScore();
         
         function preload() {
             console.log("Starting preload...");
@@ -322,7 +306,6 @@
             maxDisplayedLines = 0;
             currentLineIndex = 0;
             
-            // Создаем препятствия и цветы
             for (let i = 0; i < 8; i++) {
                 obstacles.push(new Obstacle());
             }
@@ -332,14 +315,12 @@
             
             updateGreeting();
             
-            // Настройка кнопки старта
             let startButton = document.getElementById('startButton');
             if (startButton) {
                 startButton.style.display = 'block';
                 console.log("Start button displayed");
                 startButton.onclick = () => {
                     gameState = 'playing';
-                    gameStarted = true;
                     startButton.style.display = 'none';
                     bee = new Bee();
                     console.log("Game started");
@@ -348,38 +329,23 @@
                 console.error("Start button not found!");
             }
             
-            // Настройка кнопки сброса рекорда
-            setupResetButton();
-            
-            // Устанавливаем частоту кадров
-            frameRate(60);
-            
-            // Сразу отрисуем все счетчики для уверенности
-            redrawCanvas();
-            
-            console.log("Setup completed");
-        }
-
-        // Настройка кнопки сброса рекорда в отдельной функции
-        function setupResetButton() {
             let resetHighScoreButton = document.getElementById('resetHighScoreButton');
             if (resetHighScoreButton) {
-                resetHighScoreButton.style.display = 'block'; // Убедимся, что кнопка видна
                 resetHighScoreButton.onclick = () => {
                     highScore = 0;
                     try {
                         localStorage.setItem('flappyBeeHighScore', '0');
                         console.log("Рекорд сброшен!");
-                        // Принудительно перерисовываем canvas
                         redrawCanvas();
                     } catch (e) {
                         console.error("Ошибка при сбросе рекорда:", e);
                     }
                 };
-                console.log("Reset button setup completed");
             } else {
                 console.error("Reset high score button not found!");
             }
+            
+            console.log("Setup completed");
         }
 
         // Функция для принудительной перерисовки canvas
@@ -390,32 +356,28 @@
             textSize(16);
             fill(51);
             text(`Цветки: ${collectedFlowers}`, 10, 10);
-            textAlign(RIGHT, TOP);
-            text(`Рекорд: ${highScore}`, width - 10, 10);
+            text(`Рекорд: ${highScore}`, 10, 40);
         }
 
         function draw() {
-            // Очищаем холст
+            console.log("Draw called, gameState:", gameState);
             background('#ccfbff');
             
-            // Отображаем счетчики всегда, независимо от состояния игры
+            // Всегда отображаем счетчики, даже в состоянии 'paused'
             textAlign(LEFT, TOP);
             textFont('Press Start 2P');
             textSize(16);
             fill(51);
             text(`Цветки: ${collectedFlowers}`, 10, 10);
-            textAlign(RIGHT, TOP);
-            text(`Рекорд: ${highScore}`, width - 10, 10);
+            text(`Рекорд: ${highScore}`, 10, 40);
             
             if (gameState === 'paused') {
                 return;
             }
             
-            // Обновляем и отображаем пчелу
             bee.update();
             bee.show();
             
-            // Обрабатываем препятствия
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update();
                 obstacles[i].show();
@@ -424,7 +386,6 @@
                     gameState = 'paused';
                     document.getElementById('startButton').style.display = 'block';
                     
-                    // Обновляем рекорд если нужно
                     if (collectedFlowers > highScore) {
                         highScore = collectedFlowers;
                         try {
@@ -435,10 +396,8 @@
                         }
                     }
                     
-                    // Сбрасываем счетчик цветов
                     collectedFlowers = 0;
                     
-                    // Пересоздаем препятствия и цветы
                     obstacles = [];
                     flowers = [];
                     for (let j = 0; j < 8; j++) {
@@ -449,14 +408,12 @@
                     }
                 }
                 
-                // Удаляем препятствия, вышедшие за экран
                 if (obstacles[i].offscreen()) {
                     obstacles.splice(i, 1);
                     obstacles.push(new Obstacle());
                 }
             }
             
-            // Обрабатываем цветы
             for (let i = flowers.length - 1; i >= 0; i--) {
                 flowers[i].update();
                 flowers[i].show();
@@ -464,12 +421,10 @@
                 if (flowers[i].hits(bee)) {
                     collectedFlowers++;
                     
-                    // Показываем пасхалку, если она есть для текущего числа
                     if (easterEggs[collectedFlowers]) {
                         showEasterEgg(easterEggs[collectedFlowers]);
                     }
                     
-                    // Обновляем приветствие
                     if (greetingState === 'showing' && 
                         collectedFlowers > maxDisplayedLines && 
                         collectedFlowers <= greetingLines.length) {
@@ -479,12 +434,10 @@
                         }
                     }
                     
-                    // Удаляем собранный цветок и добавляем новый
                     flowers.splice(i, 1);
                     flowers.push(new Flower());
                 }
                 
-                // Удаляем цветы, вышедшие за экран
                 if (flowers[i].offscreen()) {
                     flowers.splice(i, 1);
                     flowers.push(new Flower());
@@ -588,7 +541,6 @@
             console.log("Key pressed:", key, "gameState:", gameState);
             if (key === ' ' && gameState === 'paused') {
                 gameState = 'playing';
-                gameStarted = true;
                 document.getElementById('startButton').style.display = 'none';
                 bee = new Bee();
             } else if (key === ' ' && gameState === 'playing') {
@@ -754,21 +706,11 @@
             }
         }
 
-        // Инициализация после загрузки страницы
         window.onload = () => {
             if (typeof p5 === 'undefined') {
                 console.error("p5.js не загружен! Проверьте подключение к интернету или ссылку на библиотеку.");
             } else {
                 console.log("p5.js успешно загружен.");
-                // Убедимся, что рекорд загружен при старте
-                loadHighScore();
-                // Настраиваем кнопку сброса рекорда после полной загрузки страницы
-                setTimeout(setupResetButton, 500);
-                // Принудительно отобразим все счетчики
-                setTimeout(redrawCanvas, 1000);
-                
-                // Сразу отобразим стартовую кнопку
-                document.getElementById('startButton').style.display = 'block';
             }
         };
     </script>
