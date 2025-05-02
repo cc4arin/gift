@@ -108,6 +108,25 @@
             animation: pulse 1.5s infinite;
         }
         
+        #resetHighScoreButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            padding: 8px 15px;
+            background: #fdf0ec;
+            border: 2px solid #aee1f9;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        
+        #resetHighScoreButton:hover {
+            background: #aee1f9;
+        }
+        
         @keyframes pulse {
             0% {
                 transform: translate(-50%, -50%) scale(1);
@@ -181,6 +200,11 @@
                 font-size: 16px;
                 padding: 10px 20px;
             }
+            
+            #resetHighScoreButton {
+                font-size: 10px;
+                padding: 6px 10px;
+            }
         }
     </style>
 </head>
@@ -194,6 +218,7 @@
         <div class="right-panel">
             <div id="game-canvas"></div>
             <button id="startButton" style="display: none;">Начать игру</button>
+            <button id="resetHighScoreButton">Сбросить рекорд</button>
             <div id="easterEgg"></div>
         </div>
     </div>
@@ -208,7 +233,8 @@
         let greetingCompleted = false;
         let greetingState = 'showing';
         let easterEggTimeoutId = null;
-        let currentLineIndex = 0; // Для отслеживания текущей строки
+        let currentLineIndex = 0;
+        let isLineTransitioning = false; // Флаг для предотвращения резкого обновления
         
         const easterEggs = {
             25: "Ого, вы собираетесь продолжить?",
@@ -290,6 +316,18 @@
                 bee = new Bee();
             };
             
+            // Добавляем обработчик для кнопки сброса рекорда
+            let resetHighScoreButton = document.getElementById('resetHighScoreButton');
+            resetHighScoreButton.onclick = () => {
+                highScore = 0;
+                try {
+                    localStorage.setItem('flappyBeeHighScore', '0');
+                    console.log("Рекорд сброшен!");
+                } catch (e) {
+                    console.error("Ошибка при сбросе рекорда:", e);
+                }
+            };
+            
             console.log("Setup completed");
         }
 
@@ -329,8 +367,7 @@
                         }
                     }
                     
-                    collectedFlowers = 0;
-                    
+                    // Не обнуляем collectedFlowers
                     obstacles = [];
                     flowers = [];
                     for (let j = 0; j < 8; j++) {
@@ -362,20 +399,9 @@
                         collectedFlowers > maxDisplayedLines && 
                         collectedFlowers <= greetingLines.length) {
                         maxDisplayedLines = collectedFlowers;
-                        updateGreeting();
-                        
-                        if (maxDisplayedLines >= greetingLines.length && !greetingCompleted) {
-                            greetingCompleted = true;
-                            setTimeout(() => {
-                                let greeting = document.getElementById('greeting');
-                                greeting.style.opacity = '0';
-                                setTimeout(() => {
-                                    greetingState = 'hidden';
-                                    let greetingContent = document.querySelector('.greeting-content');
-                                    greetingContent.innerHTML = '';
-                                    greeting.style.opacity = '1';
-                                }, 1500);
-                            }, 5000);
+                        // Вызываем updateGreeting только если не идет анимация
+                        if (!isLineTransitioning) {
+                            updateGreeting();
                         }
                     }
                     
@@ -394,6 +420,9 @@
             console.log("Updating greeting, maxDisplayedLines:", maxDisplayedLines);
             let greetingContent = document.querySelector('.greeting-content');
             
+            // Если идет анимация, не обновляем
+            if (isLineTransitioning) return;
+            
             // Очищаем содержимое
             greetingContent.innerHTML = '';
             
@@ -410,6 +439,8 @@
             
             // Показываем только одну строку за раз
             if (currentLineIndex < maxDisplayedLines) {
+                isLineTransitioning = true; // Устанавливаем флаг анимации
+                
                 let lineElement = document.createElement('div');
                 lineElement.className = 'greeting-line';
                 lineElement.textContent = greetingLines[currentLineIndex];
@@ -421,7 +452,7 @@
                     lineElement.classList.add('visible');
                 }, 100);
                 
-                // Запускаем исчезновение через 2 секунды
+                // Запускаем исчезновение через 4 секунды
                 setTimeout(() => {
                     lineElement.classList.remove('visible');
                     lineElement.classList.add('fading');
@@ -429,11 +460,12 @@
                     // После завершения анимации исчезновения переходим к следующей строке
                     setTimeout(() => {
                         currentLineIndex++;
-                        if (currentLineIndex < greetingLines.length) {
+                        isLineTransitioning = false; // Снимаем флаг анимации
+                        if (currentLineIndex < greetingLines.length && currentLineIndex < maxDisplayedLines) {
                             updateGreeting();
                         }
                     }, 800); // Длительность анимации исчезновения
-                }, 2000); // Время отображения строки
+                }, 4000); // Время отображения строки увеличено до 4 секунд
             }
         }
 
