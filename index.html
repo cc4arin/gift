@@ -251,6 +251,7 @@
         
         try {
             highScore = parseInt(localStorage.getItem('flappyBeeHighScore')) || 0;
+            console.log("High score loaded:", highScore);
         } catch (e) {
             console.error("Ошибка при загрузке рекорда:", e);
             highScore = 0;
@@ -274,12 +275,18 @@
             } catch (e) {
                 console.error("Preload error:", e);
             }
+            console.log("Preload completed");
         }
 
         function setup() {
             console.log("Setup started");
-            let canvas = createCanvas(canvasWidth, canvasHeight);
-            canvas.parent('game-canvas');
+            try {
+                let canvas = createCanvas(canvasWidth, canvasHeight);
+                canvas.parent('game-canvas');
+                console.log("Canvas created and attached to game-canvas");
+            } catch (e) {
+                console.error("Error in createCanvas:", e);
+            }
             
             bee = new Bee();
             obstacles = [];
@@ -309,24 +316,34 @@
             updateGreeting();
             
             let startButton = document.getElementById('startButton');
-            startButton.style.display = 'block';
-            startButton.onclick = () => {
-                gameState = 'playing';
-                startButton.style.display = 'none';
-                bee = new Bee();
-            };
+            if (startButton) {
+                startButton.style.display = 'block';
+                console.log("Start button displayed");
+                startButton.onclick = () => {
+                    gameState = 'playing';
+                    startButton.style.display = 'none';
+                    bee = new Bee();
+                    console.log("Game started");
+                };
+            } else {
+                console.error("Start button not found!");
+            }
             
             let resetHighScoreButton = document.getElementById('resetHighScoreButton');
-            resetHighScoreButton.onclick = () => {
-                highScore = 0;
-                try {
-                    localStorage.setItem('flappyBeeHighScore', '0');
-                    console.log("Рекорд сброшен!");
-                    redraw(); // Обновляем canvas
-                } catch (e) {
-                    console.error("Ошибка при сбросе рекорда:", e);
-                }
-            };
+            if (resetHighScoreButton) {
+                resetHighScoreButton.onclick = () => {
+                    highScore = 0;
+                    try {
+                        localStorage.setItem('flappyBeeHighScore', '0');
+                        console.log("Рекорд сброшен!");
+                        redraw();
+                    } catch (e) {
+                        console.error("Ошибка при сбросе рекорда:", e);
+                    }
+                };
+            } else {
+                console.error("Reset high score button not found!");
+            }
             
             console.log("Setup completed");
         }
@@ -367,7 +384,7 @@
                         }
                     }
                     
-                    collectedFlowers = 0; // Обнуляем счетчик
+                    collectedFlowers = 0;
                     
                     obstacles = [];
                     flowers = [];
