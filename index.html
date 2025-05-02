@@ -218,13 +218,14 @@
         </div>
         <div class="right-panel">
             <div id="game-canvas"></div>
-            <button id="startButton" style="display: none;">Начать игру</button>
-            <button id="resetHighScoreButton" style="display: block;">Сбросить рекорд</button>
+            <button id="startButton">Начать игру</button>
+            <button id="resetHighScoreButton">Сбросить рекорд</button>
             <div id="easterEgg"></div>
         </div>
     </div>
     
     <script>
+        // Глобальные переменные
         let bee, obstacles, flowers, greetingLines, collectedFlowers, highScore;
         let beeImg, flowerImg, cloudImg;
         let gameState = 'paused';
@@ -236,7 +237,9 @@
         let easterEggTimeoutId = null;
         let currentLineIndex = 0;
         let isLineTransitioning = false;
+        let gameStarted = false;
         
+        // Пасхальные яйца
         const easterEggs = {
             25: "Ого, вы собираетесь продолжить?",
             30: "Да Вы уверенно идёте к цели!",
@@ -319,6 +322,7 @@
             maxDisplayedLines = 0;
             currentLineIndex = 0;
             
+            // Создаем препятствия и цветы
             for (let i = 0; i < 8; i++) {
                 obstacles.push(new Obstacle());
             }
@@ -328,12 +332,14 @@
             
             updateGreeting();
             
+            // Настройка кнопки старта
             let startButton = document.getElementById('startButton');
             if (startButton) {
                 startButton.style.display = 'block';
                 console.log("Start button displayed");
                 startButton.onclick = () => {
                     gameState = 'playing';
+                    gameStarted = true;
                     startButton.style.display = 'none';
                     bee = new Bee();
                     console.log("Game started");
@@ -345,8 +351,10 @@
             // Настройка кнопки сброса рекорда
             setupResetButton();
             
-            // Сразу отрисуем все счетчики для уверенности
+            // Устанавливаем частоту кадров
             frameRate(60);
+            
+            // Сразу отрисуем все счетчики для уверенности
             redrawCanvas();
             
             console.log("Setup completed");
@@ -387,9 +395,10 @@
         }
 
         function draw() {
+            // Очищаем холст
             background('#ccfbff');
             
-            // Отображаем счетчики всегда, даже в состоянии 'paused'
+            // Отображаем счетчики всегда, независимо от состояния игры
             textAlign(LEFT, TOP);
             textFont('Press Start 2P');
             textSize(16);
@@ -402,9 +411,11 @@
                 return;
             }
             
+            // Обновляем и отображаем пчелу
             bee.update();
             bee.show();
             
+            // Обрабатываем препятствия
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update();
                 obstacles[i].show();
@@ -413,6 +424,7 @@
                     gameState = 'paused';
                     document.getElementById('startButton').style.display = 'block';
                     
+                    // Обновляем рекорд если нужно
                     if (collectedFlowers > highScore) {
                         highScore = collectedFlowers;
                         try {
@@ -423,8 +435,10 @@
                         }
                     }
                     
+                    // Сбрасываем счетчик цветов
                     collectedFlowers = 0;
                     
+                    // Пересоздаем препятствия и цветы
                     obstacles = [];
                     flowers = [];
                     for (let j = 0; j < 8; j++) {
@@ -435,12 +449,14 @@
                     }
                 }
                 
+                // Удаляем препятствия, вышедшие за экран
                 if (obstacles[i].offscreen()) {
                     obstacles.splice(i, 1);
                     obstacles.push(new Obstacle());
                 }
             }
             
+            // Обрабатываем цветы
             for (let i = flowers.length - 1; i >= 0; i--) {
                 flowers[i].update();
                 flowers[i].show();
@@ -448,10 +464,12 @@
                 if (flowers[i].hits(bee)) {
                     collectedFlowers++;
                     
+                    // Показываем пасхалку, если она есть для текущего числа
                     if (easterEggs[collectedFlowers]) {
                         showEasterEgg(easterEggs[collectedFlowers]);
                     }
                     
+                    // Обновляем приветствие
                     if (greetingState === 'showing' && 
                         collectedFlowers > maxDisplayedLines && 
                         collectedFlowers <= greetingLines.length) {
@@ -461,10 +479,12 @@
                         }
                     }
                     
+                    // Удаляем собранный цветок и добавляем новый
                     flowers.splice(i, 1);
                     flowers.push(new Flower());
                 }
                 
+                // Удаляем цветы, вышедшие за экран
                 if (flowers[i].offscreen()) {
                     flowers.splice(i, 1);
                     flowers.push(new Flower());
@@ -568,6 +588,7 @@
             console.log("Key pressed:", key, "gameState:", gameState);
             if (key === ' ' && gameState === 'paused') {
                 gameState = 'playing';
+                gameStarted = true;
                 document.getElementById('startButton').style.display = 'none';
                 bee = new Bee();
             } else if (key === ' ' && gameState === 'playing') {
@@ -733,6 +754,7 @@
             }
         }
 
+        // Инициализация после загрузки страницы
         window.onload = () => {
             if (typeof p5 === 'undefined') {
                 console.error("p5.js не загружен! Проверьте подключение к интернету или ссылку на библиотеку.");
@@ -744,6 +766,9 @@
                 setTimeout(setupResetButton, 500);
                 // Принудительно отобразим все счетчики
                 setTimeout(redrawCanvas, 1000);
+                
+                // Сразу отобразим стартовую кнопку
+                document.getElementById('startButton').style.display = 'block';
             }
         };
     </script>
