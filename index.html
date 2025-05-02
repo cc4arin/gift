@@ -121,6 +121,7 @@
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 10;
+            display: block; /* Убедимся, что кнопка отображается */
         }
         
         #resetHighScoreButton:hover {
@@ -218,7 +219,7 @@
         <div class="right-panel">
             <div id="game-canvas"></div>
             <button id="startButton" style="display: none;">Начать игру</button>
-            <button id="resetHighScoreButton">Сбросить рекорд</button>
+            <button id="resetHighScoreButton" style="display: block;">Сбросить рекорд</button>
             <div id="easterEgg"></div>
         </div>
     </div>
@@ -249,13 +250,25 @@
             100: "100?! Вы взяли и сделали это! Легендарный момент. Ну всё, я Вам буду должна ещё один сюрприз за поставленные рекорды!"
         };
         
-        try {
-            highScore = parseInt(localStorage.getItem('flappyBeeHighScore')) || 0;
-            console.log("High score loaded:", highScore);
-        } catch (e) {
-            console.error("Ошибка при загрузке рекорда:", e);
-            highScore = 0;
+        // Загружаем рекорд из localStorage при загрузке страницы
+        function loadHighScore() {
+            try {
+                let savedScore = localStorage.getItem('flappyBeeHighScore');
+                if(savedScore !== null) {
+                    highScore = parseInt(savedScore);
+                } else {
+                    highScore = 0;
+                    localStorage.setItem('flappyBeeHighScore', '0');
+                }
+                console.log("High score loaded:", highScore);
+            } catch (e) {
+                console.error("Ошибка при загрузке рекорда:", e);
+                highScore = 0;
+            }
         }
+        
+        // Инициализация при загрузке скрипта
+        loadHighScore();
         
         function preload() {
             console.log("Starting preload...");
@@ -329,8 +342,21 @@
                 console.error("Start button not found!");
             }
             
+            // Настройка кнопки сброса рекорда
+            setupResetButton();
+            
+            // Сразу отрисуем все счетчики для уверенности
+            frameRate(60);
+            redrawCanvas();
+            
+            console.log("Setup completed");
+        }
+
+        // Настройка кнопки сброса рекорда в отдельной функции
+        function setupResetButton() {
             let resetHighScoreButton = document.getElementById('resetHighScoreButton');
             if (resetHighScoreButton) {
+                resetHighScoreButton.style.display = 'block'; // Убедимся, что кнопка видна
                 resetHighScoreButton.onclick = () => {
                     highScore = 0;
                     try {
@@ -342,11 +368,10 @@
                         console.error("Ошибка при сбросе рекорда:", e);
                     }
                 };
+                console.log("Reset button setup completed");
             } else {
                 console.error("Reset high score button not found!");
             }
-            
-            console.log("Setup completed");
         }
 
         // Функция для принудительной перерисовки canvas
@@ -362,10 +387,9 @@
         }
 
         function draw() {
-            console.log("Draw called, gameState:", gameState);
             background('#ccfbff');
             
-            // Всегда отображаем счетчики, даже в состоянии 'paused'
+            // Отображаем счетчики всегда, даже в состоянии 'paused'
             textAlign(LEFT, TOP);
             textFont('Press Start 2P');
             textSize(16);
@@ -714,6 +738,12 @@
                 console.error("p5.js не загружен! Проверьте подключение к интернету или ссылку на библиотеку.");
             } else {
                 console.log("p5.js успешно загружен.");
+                // Убедимся, что рекорд загружен при старте
+                loadHighScore();
+                // Настраиваем кнопку сброса рекорда после полной загрузки страницы
+                setTimeout(setupResetButton, 500);
+                // Принудительно отобразим все счетчики
+                setTimeout(redrawCanvas, 1000);
             }
         };
     </script>
