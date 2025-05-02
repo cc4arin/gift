@@ -63,7 +63,6 @@
             text-align: center;
             width: 100%;
             max-height: 100%;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -209,6 +208,7 @@
         let greetingCompleted = false;
         let greetingState = 'showing';
         let easterEggTimeoutId = null;
+        let currentLineIndex = 0; // Для отслеживания текущей строки
         
         const easterEggs = {
             25: "Ого, вы собираетесь продолжить?",
@@ -271,6 +271,7 @@
             ];
             collectedFlowers = 0;
             maxDisplayedLines = 0;
+            currentLineIndex = 0;
             
             for (let i = 0; i < 8; i++) {
                 obstacles.push(new Obstacle());
@@ -393,14 +394,10 @@
             console.log("Updating greeting, maxDisplayedLines:", maxDisplayedLines);
             let greetingContent = document.querySelector('.greeting-content');
             
-            const maxVisibleLines = 3;
-            let linesToShow = Math.min(maxDisplayedLines, greetingLines.length);
-            
-            let startLine = Math.max(0, linesToShow - maxVisibleLines);
-            let endLine = linesToShow;
-            
+            // Очищаем содержимое
             greetingContent.innerHTML = '';
             
+            // Создаем контейнер для центрирования
             let centeringContainer = document.createElement('div');
             centeringContainer.style.display = 'flex';
             centeringContainer.style.flexDirection = 'column';
@@ -411,21 +408,32 @@
             
             greetingContent.appendChild(centeringContainer);
             
-            for (let i = 0; i < greetingLines.length; i++) {
+            // Показываем только одну строку за раз
+            if (currentLineIndex < maxDisplayedLines) {
                 let lineElement = document.createElement('div');
                 lineElement.className = 'greeting-line';
-                lineElement.textContent = greetingLines[i];
-                
-                if (i >= startLine && i < endLine) {
-                    const delay = (endLine - i - 1) * 200;
-                    setTimeout(() => {
-                        lineElement.classList.add('visible');
-                    }, delay);
-                } else if (i < startLine) {
-                    lineElement.classList.add('fading');
-                }
+                lineElement.textContent = greetingLines[currentLineIndex];
                 
                 centeringContainer.appendChild(lineElement);
+                
+                // Показываем строку с анимацией
+                setTimeout(() => {
+                    lineElement.classList.add('visible');
+                }, 100);
+                
+                // Запускаем исчезновение через 2 секунды
+                setTimeout(() => {
+                    lineElement.classList.remove('visible');
+                    lineElement.classList.add('fading');
+                    
+                    // После завершения анимации исчезновения переходим к следующей строке
+                    setTimeout(() => {
+                        currentLineIndex++;
+                        if (currentLineIndex < greetingLines.length) {
+                            updateGreeting();
+                        }
+                    }, 800); // Длительность анимации исчезновения
+                }, 2000); // Время отображения строки
             }
         }
 
@@ -644,7 +652,6 @@
             }
         }
 
-        // Проверка загрузки p5.js
         window.onload = () => {
             if (typeof p5 === 'undefined') {
                 console.error("p5.js не загружен! Проверьте подключение к интернету или ссылку на библиотеку.");
