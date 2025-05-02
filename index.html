@@ -54,22 +54,41 @@
             justify-content: center;
             align-items: center;
             transition: opacity 1.5s ease;
+            font-size: clamp(12px, 2vw, 14px);
         }
         
         .greeting-content {
             position: relative;
             text-align: center;
             width: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         
         .greeting-line {
-            line-height: 1.8;
+            line-height: 1.6;
             color: #333;
-            margin-bottom: 10px;
-            opacity: 1;
-            transition: opacity 0.8s ease;
+            margin-bottom: 8px;
             text-align: center;
-            width: 100%;
+            width: 90%;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            word-wrap: break-word;
+        }
+        
+        .greeting-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .greeting-line.fading {
+            opacity: 0;
+            transform: translateY(-20px);
         }
         
         #startButton {
@@ -108,14 +127,26 @@
             background: #aee1f9;
         }
         
-        .fade-mask {
+        #easterEgg {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(240,250,255,0.8) 70%, rgba(232,247,254,0.9));
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.8s ease, transform 0.8s ease;
             pointer-events: none;
+        }
+        
+        #easterEgg.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
         }
         
         @media (max-width: 900px) {
@@ -138,7 +169,12 @@
             
             #greeting {
                 height: 300px;
-                width: 100%;
+                font-size: clamp(10px, 3vw, 12px);
+            }
+            
+            .greeting-line {
+                line-height: 1.5;
+                margin-bottom: 6px;
             }
             
             #startButton {
@@ -153,24 +189,45 @@
         <div class="left-panel">
             <div id="greeting">
                 <div class="greeting-content"></div>
-                <div class="fade-mask"></div>
             </div>
         </div>
         <div class="right-panel">
             <div id="game-canvas"></div>
             <button id="startButton" style="display: none;">Начать игру</button>
+            <div id="easterEgg"></div>
         </div>
     </div>
     
     <script>
-        let bee, obstacles, flowers, greetingLines, collectedFlowers;
+        let bee, obstacles, flowers, greetingLines, collectedFlowers, highScore;
         let beeImg, flowerImg, cloudImg;
-        let gameState = 'paused'; // Состояния: 'paused', 'playing'
-        const canvasWidth = 700; // Увеличенная ширина для прямоугольного поля
+        let gameState = 'paused';
+        const canvasWidth = 700;
         const canvasHeight = 500;
-        let visibleLines = 7; // Увеличенное количество видимых строк в поздравлении
-        let maxDisplayedLines = 0; // Максимальное количество отображаемых строк
-        let greetingCompleted = false; // Флаг для отслеживания завершения поздравления
+        let maxDisplayedLines = 0;
+        let greetingCompleted = false;
+        let greetingState = 'showing';
+        let easterEggTimeoutId = null;
+        
+        const easterEggs = {
+            25: "Ого, вы собираетесь продолжить?",
+            30: "Да Вы уверенно идёте к цели!",
+            37: "З7 цветочков? Поздравляю! Вы стали экспертом цветочной магии \"37\" уровня!",
+            40: "Хм, как далеко Вы хотите зайти?",
+            50: "Полсотни! Я удивлена, мне самой ещё не удавалось добраться до этого рекорда!",
+            60: "Вау..60?! Вы хотите весь день потратить на эту игру?)",
+            70: "Ну всё я сдаюсь. У меня заканчиваются идеи! Дайте угадаю... Ваша цель 100?",
+            80: "Ну Вы прирождённый мастер! Это мощно...мне льстит, что Вы тратите своё время на это...",
+            90: "Серьёзно, Вы не устали!? Сколько нужно было попыток, чтобы добраться до этого числа? Или для Вас это слишком просто)?",
+            100: "100?! Вы взяли и сделали это! Легендарный момент. Ну всё, я Вам буду должна ещё один сюрприз за поставленные рекорды!"
+        };
+        
+        try {
+            highScore = parseInt(localStorage.getItem('flappyBeeHighScore')) || 0;
+        } catch (e) {
+            console.error("Ошибка при загрузке рекорда:", e);
+            highScore = 0;
+        }
         
         function preload() {
             console.log("Starting preload...");
@@ -214,7 +271,6 @@
             collectedFlowers = 0;
             maxDisplayedLines = 0;
             
-            // Инициализация препятствий и цветков
             for (let i = 0; i < 8; i++) {
                 obstacles.push(new Obstacle());
             }
@@ -222,16 +278,14 @@
                 flowers.push(new Flower());
             }
             
-            // Создаем начальное поздравление
             updateGreeting();
             
-            // Настройка кнопки "Начать игру"
             let startButton = document.getElementById('startButton');
             startButton.style.display = 'block';
             startButton.onclick = () => {
                 gameState = 'playing';
                 startButton.style.display = 'none';
-                bee = new Bee(); // Сброс позиции шмеля
+                bee = new Bee();
             };
             
             console.log("Setup completed");
@@ -241,22 +295,20 @@
             background('#ccfbff');
             
             if (gameState === 'paused') {
-                // Убираем инструкцию о нажатии пробела
                 return;
             }
             
-            // Обновление и отображение шмеля
             bee.update();
             bee.show();
             
-            // Отображение счётчика цветков
             textAlign(LEFT, TOP);
             textFont('Press Start 2P');
             textSize(16);
             fill(51);
             text(`Цветки: ${collectedFlowers}`, 10, 10);
+            textAlign(RIGHT, TOP);
+            text(`Рекорд: ${highScore}`, width - 10, 10);
             
-            // Обновление и отображение препятствий
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update();
                 obstacles[i].show();
@@ -264,10 +316,18 @@
                 if (obstacles[i].hits(bee)) {
                     gameState = 'paused';
                     document.getElementById('startButton').style.display = 'block';
-                    // Сбрасываем только счетчик цветов при столкновении, не трогаем поздравление
+                    
+                    if (collectedFlowers > highScore) {
+                        highScore = collectedFlowers;
+                        try {
+                            localStorage.setItem('flappyBeeHighScore', highScore.toString());
+                        } catch (e) {
+                            console.error("Ошибка при сохранении рекорда:", e);
+                        }
+                    }
+                    
                     collectedFlowers = 0;
                     
-                    // Сбрасываем препятствия и цветы
                     obstacles = [];
                     flowers = [];
                     for (let j = 0; j < 8; j++) {
@@ -284,32 +344,39 @@
                 }
             }
             
-            // Обновление и отображение цветков
             for (let i = flowers.length - 1; i >= 0; i--) {
                 flowers[i].update();
                 flowers[i].show();
                 
                 if (flowers[i].hits(bee)) {
                     collectedFlowers++;
-                    if (collectedFlowers > maxDisplayedLines && collectedFlowers <= greetingLines.length) {
+                    
+                    if (easterEggs[collectedFlowers]) {
+                        showEasterEgg(easterEggs[collectedFlowers]);
+                    }
+                    
+                    if (greetingState === 'showing' && 
+                        collectedFlowers > maxDisplayedLines && 
+                        collectedFlowers <= greetingLines.length) {
                         maxDisplayedLines = collectedFlowers;
                         updateGreeting();
                         
-                        // Проверяем, закончилось ли поздравление
                         if (maxDisplayedLines >= greetingLines.length && !greetingCompleted) {
                             greetingCompleted = true;
-                            // Запускаем таймер на скрытие поздравления через 5 секунд
                             setTimeout(() => {
                                 let greeting = document.getElementById('greeting');
                                 greeting.style.opacity = '0';
-                                // После завершения анимации скрытия, убираем блок с поздравлением совсем
                                 setTimeout(() => {
-                                    document.querySelector('.left-panel').style.display = 'none';
-                                    document.querySelector('.right-panel').style.flexBasis = '100%';
+                                    greetingState = 'hidden';
+                                    let greetingContent = document.querySelector('.greeting-content');
+                                    greetingContent.innerHTML = '';
+                                    let greeting = document.getElementById('greeting');
+                                    greeting.style.opacity = '1';
                                 }, 1500);
                             }, 5000);
                         }
                     }
+                    
                     flowers.splice(i, 1);
                     flowers.push(new Flower());
                 }
@@ -323,48 +390,85 @@
 
         function updateGreeting() {
             let greetingContent = document.querySelector('.greeting-content');
-            greetingContent.innerHTML = '';
             
-            // Отображаем строки поздравления
+            const maxVisibleLines = 3;
             let linesToShow = Math.min(maxDisplayedLines, greetingLines.length);
             
-            // Фиксируем центральную линию отображения
-            const fixedVisibleLines = visibleLines;
+            let startLine = Math.max(0, linesToShow - maxVisibleLines);
+            let endLine = linesToShow;
             
-            // Создаем видимые строки для отображения
-            // Рассчитываем окно отображения так, чтобы новые строки добавлялись снизу, а самые старые исчезали сверху
-            let visibleStart = Math.max(0, linesToShow - fixedVisibleLines);
-            let visibleEnd = linesToShow;
+            greetingContent.innerHTML = '';
             
-            // Если у нас меньше строк, чем может поместиться в видимой области
-            if (linesToShow <= fixedVisibleLines) {
-                visibleStart = 0;
-                visibleEnd = linesToShow;
-            }
+            let centeringContainer = document.createElement('div');
+            centeringContainer.style.display = 'flex';
+            centeringContainer.style.flexDirection = 'column';
+            centeringContainer.style.justifyContent = 'center';
+            centeringContainer.style.alignItems = 'center';
+            centeringContainer.style.height = '100%';
+            centeringContainer.style.width = '100%';
             
-            // Создаем элементы для каждой видимой строки
-            for (let i = visibleStart; i < visibleEnd; i++) {
+            greetingContent.appendChild(centeringContainer);
+            
+            for (let i = 0; i < greetingLines.length; i++) {
                 let lineElement = document.createElement('div');
                 lineElement.className = 'greeting-line';
                 lineElement.textContent = greetingLines[i];
                 
-                // Все строки полностью видимы
-                lineElement.style.opacity = '1';
-                
-                greetingContent.appendChild(lineElement);
-            }
-            
-            // Добавляем пустые строки сверху и снизу для центрирования,
-            // если у нас мало строк
-            if (linesToShow < fixedVisibleLines) {
-                const emptyLinesNeeded = Math.floor((fixedVisibleLines - linesToShow) / 2);
-                for (let i = 0; i < emptyLinesNeeded; i++) {
-                    let emptyLine = document.createElement('div');
-                    emptyLine.className = 'greeting-line';
-                    emptyLine.innerHTML = '&nbsp;';
-                    emptyLine.style.opacity = '0';
-                    greetingContent.insertBefore(emptyLine, greetingContent.firstChild);
+                if (i >= startLine && i < endLine) {
+                    const delay = (endLine - i - 1) * 200;
+                    setTimeout(() => {
+                        lineElement.classList.add('visible');
+                    }, delay);
+                } else if (i < startLine) {
+                    lineElement.classList.add('fading');
                 }
+                
+                centeringContainer.appendChild(lineElement);
+            }
+        }
+
+        function showEasterEgg(message) {
+            if (greetingState === 'hidden') {
+                let greetingContent = document.querySelector('.greeting-content');
+                
+                greetingContent.innerHTML = '';
+                
+                let easterEggLine = document.createElement('div');
+                easterEggLine.className = 'greeting-line';
+                easterEggLine.textContent = message;
+                
+                greetingContent.appendChild(easterEggLine);
+                setTimeout(() => {
+                    easterEggLine.classList.add('visible');
+                }, 100);
+                
+                if (easterEggTimeoutId) {
+                    clearTimeout(easterEggTimeoutId);
+                }
+                
+                easterEggTimeoutId = setTimeout(() => {
+                    easterEggLine.classList.remove('visible');
+                    easterEggLine.classList.add('fading');
+                    
+                    setTimeout(() => {
+                        if (greetingContent.contains(easterEggLine)) {
+                            greetingContent.removeChild(easterEggLine);
+                        }
+                    }, 1000);
+                }, 5000);
+            } else {
+                const easterEggElement = document.getElementById('easterEgg');
+                
+                if (easterEggTimeoutId) {
+                    clearTimeout(easterEggTimeoutId);
+                }
+                
+                easterEggElement.textContent = message;
+                easterEggElement.classList.add('visible');
+                
+                easterEggTimeoutId = setTimeout(() => {
+                    easterEggElement.classList.remove('visible');
+                }, 5000);
             }
         }
 
@@ -387,7 +491,7 @@
                 this.lift = -10;
                 this.size = 55;
                 this.damping = 0.95;
-                this.hitbox = this.size * 0.6; // Меньший хитбокс для более точных столкновений
+                this.hitbox = this.size * 0.6;
             }
             
             update() {
@@ -406,11 +510,6 @@
                 
                 if (beeImg && beeImg.width > 0) {
                     image(beeImg, -this.size/2, -this.size/2, this.size, this.size);
-                    
-                    // Визуализация хитбокса (раскомментировать для отладки)
-                    // noFill();
-                    // stroke(255, 0, 0);
-                    // ellipse(0, 0, this.hitbox, this.hitbox);
                 } else {
                     console.warn("Bee image not loaded, using fallback");
                     fill('#FFC107');
@@ -446,11 +545,11 @@
         class Obstacle {
             constructor() {
                 this.x = width + random(100, 300);
-                this.gap = random(220, 320); // Увеличенный зазор для более легкого прохождения
+                this.gap = random(220, 320);
                 this.top = random(height / 6, height - this.gap - height / 6);
                 this.w = random(80, 120);
-                this.speed = random(4, 6); // Увеличена скорость препятствий
-                this.hitboxPadding = 10; // Меньший хитбокс для более точных столкновений
+                this.speed = random(4, 6);
+                this.hitboxPadding = 10;
             }
             
             update() {
@@ -460,14 +559,8 @@
             
             show() {
                 if (cloudImg && cloudImg.width > 0) {
-                    image(cloudImg, this.x, 0, this.w, this.top);
+                    image(cloudImg, newcom, this.x, 0, this.w, this.top);
                     image(cloudImg, this.x, this.top + this.gap, this.w, height - this.top - this.gap);
-                    
-                    // Визуализация хитбокса (раскомментировать для отладки)
-                    // noFill();
-                    // stroke(255, 0, 0);
-                    // rect(this.x + this.hitboxPadding, 0, this.w - this.hitboxPadding*2, this.top);
-                    // rect(this.x + this.hitboxPadding, this.top + this.gap, this.w - this.hitboxPadding*2, height - this.top - this.gap);
                 } else {
                     console.warn("Cloud image not loaded, using fallback");
                     noStroke();
@@ -481,7 +574,6 @@
             }
             
             hits(bee) {
-                // Проверка столкновения с учетом уменьшенных хитбоксов
                 if (bee.x + bee.hitbox/2 > this.x + this.hitboxPadding && 
                     bee.x - bee.hitbox/2 < this.x + this.w - this.hitboxPadding) {
                     if (bee.y - bee.hitbox/2 < this.top - this.hitboxPadding || 
@@ -500,11 +592,10 @@
         class Flower {
             constructor() {
                 this.x = width + random(100, 300);
-                // Равномерное распределение по высоте
                 this.y = random([height / 6, height / 3, height / 2, 2 * height / 3, 5 * height / 6]);
                 this.size = 45;
                 this.speed = random(2, 4);
-                this.hitbox = this.size * 0.8; // Меньший хитбокс для цветка
+                this.hitbox = this.size * 0.8;
             }
             
             update() {
@@ -520,11 +611,6 @@
                 
                 if (flowerImg && flowerImg.width > 0) {
                     image(flowerImg, -this.size/2, -this.size/2, this.size, this.size);
-                    
-                    // Визуализация хитбокса (раскомментировать для отладки)
-                    // noFill();
-                    // stroke(0, 255, 0);
-                    // ellipse(0, 0, this.hitbox, this.hitbox);
                 } else {
                     console.warn("Flower image not loaded, using fallback");
                     fill('#FFB6C1');
