@@ -336,7 +336,8 @@
                     try {
                         localStorage.setItem('flappyBeeHighScore', '0');
                         console.log("Рекорд сброшен!");
-                        redraw();
+                        // Принудительно перерисовываем canvas
+                        redrawCanvas();
                     } catch (e) {
                         console.error("Ошибка при сбросе рекорда:", e);
                     }
@@ -348,17 +349,9 @@
             console.log("Setup completed");
         }
 
-        function draw() {
-            console.log("Draw called, gameState:", gameState);
+        // Функция для принудительной перерисовки canvas
+        function redrawCanvas() {
             background('#ccfbff');
-            
-            if (gameState === 'paused') {
-                return;
-            }
-            
-            bee.update();
-            bee.show();
-            
             textAlign(LEFT, TOP);
             textFont('Press Start 2P');
             textSize(16);
@@ -366,6 +359,27 @@
             text(`Цветки: ${collectedFlowers}`, 10, 10);
             textAlign(RIGHT, TOP);
             text(`Рекорд: ${highScore}`, width - 10, 10);
+        }
+
+        function draw() {
+            console.log("Draw called, gameState:", gameState);
+            background('#ccfbff');
+            
+            // Всегда отображаем счетчики, даже в состоянии 'paused'
+            textAlign(LEFT, TOP);
+            textFont('Press Start 2P');
+            textSize(16);
+            fill(51);
+            text(`Цветки: ${collectedFlowers}`, 10, 10);
+            textAlign(RIGHT, TOP);
+            text(`Рекорд: ${highScore}`, width - 10, 10);
+            
+            if (gameState === 'paused') {
+                return;
+            }
+            
+            bee.update();
+            bee.show();
             
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].update();
@@ -379,6 +393,7 @@
                         highScore = collectedFlowers;
                         try {
                             localStorage.setItem('flappyBeeHighScore', highScore.toString());
+                            console.log("New high score saved:", highScore);
                         } catch (e) {
                             console.error("Ошибка при сохранении рекорда:", e);
                         }
