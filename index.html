@@ -234,7 +234,7 @@
         let greetingState = 'showing';
         let easterEggTimeoutId = null;
         let currentLineIndex = 0;
-        let isLineTransitioning = false; // Флаг для предотвращения резкого обновления
+        let isLineTransitioning = false;
         
         const easterEggs = {
             25: "Ого, вы собираетесь продолжить?",
@@ -316,13 +316,13 @@
                 bee = new Bee();
             };
             
-            // Добавляем обработчик для кнопки сброса рекорда
             let resetHighScoreButton = document.getElementById('resetHighScoreButton');
             resetHighScoreButton.onclick = () => {
                 highScore = 0;
                 try {
                     localStorage.setItem('flappyBeeHighScore', '0');
                     console.log("Рекорд сброшен!");
+                    redraw(); // Обновляем canvas
                 } catch (e) {
                     console.error("Ошибка при сбросе рекорда:", e);
                 }
@@ -367,7 +367,8 @@
                         }
                     }
                     
-                    // Не обнуляем collectedFlowers
+                    collectedFlowers = 0; // Обнуляем счетчик
+                    
                     obstacles = [];
                     flowers = [];
                     for (let j = 0; j < 8; j++) {
@@ -399,7 +400,6 @@
                         collectedFlowers > maxDisplayedLines && 
                         collectedFlowers <= greetingLines.length) {
                         maxDisplayedLines = collectedFlowers;
-                        // Вызываем updateGreeting только если не идет анимация
                         if (!isLineTransitioning) {
                             updateGreeting();
                         }
@@ -420,13 +420,10 @@
             console.log("Updating greeting, maxDisplayedLines:", maxDisplayedLines);
             let greetingContent = document.querySelector('.greeting-content');
             
-            // Если идет анимация, не обновляем
             if (isLineTransitioning) return;
             
-            // Очищаем содержимое
             greetingContent.innerHTML = '';
             
-            // Создаем контейнер для центрирования
             let centeringContainer = document.createElement('div');
             centeringContainer.style.display = 'flex';
             centeringContainer.style.flexDirection = 'column';
@@ -437,9 +434,8 @@
             
             greetingContent.appendChild(centeringContainer);
             
-            // Показываем только одну строку за раз
             if (currentLineIndex < maxDisplayedLines) {
-                isLineTransitioning = true; // Устанавливаем флаг анимации
+                isLineTransitioning = true;
                 
                 let lineElement = document.createElement('div');
                 lineElement.className = 'greeting-line';
@@ -447,25 +443,22 @@
                 
                 centeringContainer.appendChild(lineElement);
                 
-                // Показываем строку с анимацией
                 setTimeout(() => {
                     lineElement.classList.add('visible');
                 }, 100);
                 
-                // Запускаем исчезновение через 4 секунды
                 setTimeout(() => {
                     lineElement.classList.remove('visible');
                     lineElement.classList.add('fading');
                     
-                    // После завершения анимации исчезновения переходим к следующей строке
                     setTimeout(() => {
                         currentLineIndex++;
-                        isLineTransitioning = false; // Снимаем флаг анимации
+                        isLineTransitioning = false;
                         if (currentLineIndex < greetingLines.length && currentLineIndex < maxDisplayedLines) {
                             updateGreeting();
                         }
-                    }, 800); // Длительность анимации исчезновения
-                }, 4000); // Время отображения строки увеличено до 4 секунд
+                    }, 800);
+                }, 4000);
             }
         }
 
